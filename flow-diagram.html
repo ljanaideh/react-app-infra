@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React App Infra - Architecture & Flow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 2.2rem; margin-bottom: 8px; color: #f8fafc; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 48px; font-size: 1.1rem; }
+    h2 { font-size: 1.5rem; margin: 48px 0 24px; color: #38bdf8; border-bottom: 2px solid #1e3a5f; padding-bottom: 8px; }
+    h3 { font-size: 1.1rem; margin: 24px 0 12px; color: #7dd3fc; }
+
+    .architecture { display: flex; justify-content: center; gap: 32px; flex-wrap: wrap; margin: 32px 0; }
+    .arch-group { background: #1e293b; border-radius: 16px; padding: 24px; min-width: 280px; flex: 1; border: 1px solid #334155; }
+    .arch-group h3 { margin-top: 0; text-align: center; font-size: 1.2rem; color: #fbbf24; }
+    .arch-item { background: #0f172a; border-radius: 8px; padding: 12px 16px; margin: 8px 0; border-left: 3px solid #38bdf8; font-size: 0.95rem; }
+    .arch-item.highlight { border-left-color: #22c55e; }
+    .arch-item.cost { border-left-color: #f59e0b; }
+    .arch-item .label { color: #94a3b8; font-size: 0.8rem; display: block; margin-bottom: 2px; }
+
+    .flow { position: relative; margin: 32px 0; }
+    .flow-step { display: flex; align-items: flex-start; margin-bottom: 0; position: relative; }
+    .flow-step:last-child .flow-line { display: none; }
+    .flow-number { width: 48px; height: 48px; border-radius: 50%; background: #1e40af; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; z-index: 1; }
+    .flow-number.done { background: #16a34a; }
+    .flow-line { position: absolute; left: 23px; top: 48px; width: 2px; height: calc(100% - 48px); background: #334155; }
+    .flow-content { margin-left: 20px; padding-bottom: 32px; flex: 1; }
+    .flow-content h4 { font-size: 1.05rem; color: #f8fafc; margin-bottom: 4px; }
+    .flow-content p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+    .flow-content code { background: #334155; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; color: #7dd3fc; }
+    .flow-content .command { background: #1e293b; border-radius: 8px; padding: 12px 16px; margin-top: 8px; font-family: monospace; font-size: 0.85rem; color: #22d3ee; border: 1px solid #334155; overflow-x: auto; white-space: pre; }
+
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin: 24px 0; }
+    .tool-card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
+    .tool-card h4 { color: #fbbf24; margin-bottom: 8px; font-size: 1.1rem; }
+    .tool-card p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+
+    .cost-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    .cost-table th { background: #1e293b; padding: 12px 16px; text-align: left; color: #38bdf8; font-size: 0.9rem; }
+    .cost-table td { padding: 10px 16px; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+    .cost-table tr:last-child td { border-bottom: none; font-weight: bold; color: #22c55e; }
+    .cost-table .price { text-align: right; color: #fbbf24; }
+
+    .arrow { text-align: center; font-size: 2rem; color: #475569; margin: 8px 0; }
+
+    .section-gitops { background: #1e293b; border-radius: 16px; padding: 32px; margin: 32px 0; border: 1px solid #334155; }
+    .gitops-flow { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+    .gitops-box { background: #0f172a; border-radius: 8px; padding: 12px 20px; text-align: center; border: 1px solid #334155; }
+    .gitops-box .icon { font-size: 1.5rem; margin-bottom: 4px; }
+    .gitops-box .name { font-size: 0.85rem; color: #94a3b8; }
+    .gitops-arrow { color: #38bdf8; font-size: 1.5rem; }
+
+    .file-tree { background: #1e293b; border-radius: 12px; padding: 24px; margin: 16px 0; font-family: monospace; font-size: 0.85rem; line-height: 1.8; border: 1px solid #334155; }
+    .file-tree .dir { color: #fbbf24; }
+    .file-tree .file { color: #94a3b8; }
+    .file-tree .desc { color: #475569; }
+
+    @media (max-width: 768px) {
+      .architecture { flex-direction: column; }
+      h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h1>React App Infrastructure</h1>
+    <p class="subtitle">Terraform + Atlantis + GitHub + EC2 &mdash; Complete GitOps Workflow</p>
+
+    <!-- ===================== TOOLS ===================== -->
+    <h2>Tools & Their Roles</h2>
+    <div class="tools-grid">
+      <div class="tool-card">
+        <h4>Terraform</h4>
+        <p>Defines AWS resources as code. Modules for VPC, ECR, and EC2 describe the infrastructure declaratively.</p>
+      </div>
+      <div class="tool-card">
+        <h4>Atlantis</h4>
+        <p>Runs on your laptop via Docker + ngrok. Listens for GitHub webhooks and executes <code>terraform plan/apply</code> on PRs.</p>
+      </div>
+      <div class="tool-card">
+        <h4>GitHub</h4>
+        <p>Source of truth. All infrastructure changes go through pull requests. Webhooks notify Atlantis of PR events.</p>
+      </div>
+      <div class="tool-card">
+        <h4>Docker</h4>
+        <p>Packages the React app into a container image. Pushed to ECR, pulled by EC2 on boot.</p>
+      </div>
+    </div>
+
+    <!-- ===================== ARCHITECTURE ===================== -->
+    <h2>Architecture</h2>
+    <div class="architecture">
+      <div class="arch-group">
+        <h3>Your Laptop</h3>
+        <div class="arch-item">
+          <span class="label">Docker Container</span>
+          Atlantis Server (port 4141)
+        </div>
+        <div class="arch-item">
+          <span class="label">Tunnel</span>
+          ngrok &rarr; exposes Atlantis to GitHub
+        </div>
+        <div class="arch-item">
+          <span class="label">CLI Tools</span>
+          Terraform, AWS CLI, Git, Docker
+        </div>
+      </div>
+
+      <div class="arch-group">
+        <h3>GitHub</h3>
+        <div class="arch-item">
+          <span class="label">Repository</span>
+          react-app-infra
+        </div>
+        <div class="arch-item">
+          <span class="label">Webhook</span>
+          PR events &rarr; Atlantis via ngrok
+        </div>
+        <div class="arch-item">
+          <span class="label">PR Comments</span>
+          atlantis plan / atlantis apply
+        </div>
+      </div>
+
+      <div class="arch-group">
+        <h3>AWS (us-east-1)</h3>
+        <div class="arch-item highlight">
+          <span class="label">Networking</span>
+          VPC + Public Subnet + IGW + Security Group
+        </div>
+        <div class="arch-item highlight">
+          <span class="label">Container Registry</span>
+          ECR (react-app-dev)
+        </div>
+        <div class="arch-item highlight">
+          <span class="label">Compute</span>
+          EC2 Spot t4g.nano (ARM, Docker)
+        </div>
+        <div class="arch-item cost">
+          <span class="label">State Storage</span>
+          S3 bucket + DynamoDB lock table
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== GITOPS FLOW ===================== -->
+    <h2>GitOps Workflow</h2>
+    <div class="section-gitops">
+      <h3>Infrastructure Changes</h3>
+      <div class="gitops-flow">
+        <div class="gitops-box"><div class="icon">✏️</div><div class="name">Edit .tf files</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🔀</div><div class="name">Push branch</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">📋</div><div class="name">Open PR</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🤖</div><div class="name">Atlantis plans</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">👀</div><div class="name">Review plan</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🚀</div><div class="name">atlantis apply</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">✅</div><div class="name">Merge PR</div></div>
+      </div>
+
+      <h3 style="margin-top: 24px;">App Code Changes</h3>
+      <div class="gitops-flow">
+        <div class="gitops-box"><div class="icon">✏️</div><div class="name">Edit React app</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🐳</div><div class="name">Docker build (ARM)</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">📦</div><div class="name">Push to ECR</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🔄</div><div class="name">Replace EC2</div></div>
+        <div class="gitops-arrow">&rarr;</div>
+        <div class="gitops-box"><div class="icon">🌐</div><div class="name">App live!</div></div>
+      </div>
+    </div>
+
+    <!-- ===================== STEP BY STEP ===================== -->
+    <h2>Step-by-Step Setup</h2>
+    <div class="flow">
+
+      <div class="flow-step">
+        <div class="flow-number done">1</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Create GitHub Repo</h4>
+          <p>Create <code>react-app-infra</code> on GitHub. Push Terraform modules, environment config, and React app.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">2</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Create AWS Backend (S3 + DynamoDB)</h4>
+          <p>One-time manual setup for Terraform state storage.</p>
+          <div class="command">aws s3 mb s3://react-app-tfstate-laith --region us-east-1
+aws dynamodb create-table --table-name terraform-locks \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST --region us-east-1</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">3</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Start ngrok + Atlantis</h4>
+          <p>Run ngrok to tunnel port 4141. Start Atlantis Docker container with GitHub token and AWS credentials.</p>
+          <div class="command">ngrok http 4141
+docker run -d --name atlantis -p 4141:4141 \
+  -e ATLANTIS_GH_USER="ljanaideh" \
+  -e ATLANTIS_GH_TOKEN="ghp_xxx" \
+  -e AWS_ACCESS_KEY_ID="xxx" \
+  -e AWS_SECRET_ACCESS_KEY="xxx" \
+  ghcr.io/runatlantis/atlantis:latest server</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">4</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Configure GitHub Webhook</h4>
+          <p>Point webhook to <code>https://ngrok-url/events</code>. Events: Pull requests, Issue comments, Push.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">5</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Open PR &rarr; Atlantis Plans</h4>
+          <p>Push a branch with .tf changes, open a PR. Atlantis auto-runs <code>terraform plan</code> and posts the result as a PR comment.</p>
+          <div class="command">git checkout -b feature-branch
+# make changes
+git push origin feature-branch
+# Open PR on GitHub</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">6</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Comment "atlantis apply" &rarr; Infrastructure Created</h4>
+          <p>Review the plan, then comment <code>atlantis apply -p dev</code>. Terraform creates VPC, ECR, EC2 in AWS.</p>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">7</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Build Docker Image (ARM) &rarr; Push to ECR</h4>
+          <p>Build the React app as an ARM container and push to ECR.</p>
+          <div class="command">cd app/
+docker buildx build --platform linux/arm64 -t react-app-dev --load .
+docker tag react-app-dev:latest ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/react-app-dev:latest
+docker push ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/react-app-dev:latest</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-number done">8</div>
+        <div class="flow-content">
+          <h4>React App Live!</h4>
+          <p>EC2 boots, pulls Docker image from ECR, serves React app on port 80. Access via public IP.</p>
+          <div class="command">http://&lt;EC2_PUBLIC_IP&gt;</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===================== AWS RESOURCES ===================== -->
+    <h2>AWS Resources Created (12 total)</h2>
+    <div class="architecture">
+      <div class="arch-group">
+        <h3>VPC Module (6 resources)</h3>
+        <div class="arch-item">VPC (10.0.0.0/16)</div>
+        <div class="arch-item">Public Subnet (10.0.1.0/24)</div>
+        <div class="arch-item">Internet Gateway</div>
+        <div class="arch-item">Route Table (0.0.0.0/0 &rarr; IGW)</div>
+        <div class="arch-item">Route Table Association</div>
+        <div class="arch-item">Security Group (port 80)</div>
+      </div>
+      <div class="arch-group">
+        <h3>ECR Module (2 resources)</h3>
+        <div class="arch-item">ECR Repository (react-app-dev)</div>
+        <div class="arch-item">Lifecycle Policy (keep 3 images)</div>
+      </div>
+      <div class="arch-group">
+        <h3>EC2 Module (4 resources)</h3>
+        <div class="arch-item">IAM Role (ECR read access)</div>
+        <div class="arch-item">IAM Policy Attachment</div>
+        <div class="arch-item">Instance Profile</div>
+        <div class="arch-item">Spot Instance (t4g.nano)</div>
+      </div>
+    </div>
+
+    <!-- ===================== PROJECT FILES ===================== -->
+    <h2>Project Structure</h2>
+    <div class="file-tree">
+<span class="dir">react-app-infra/</span>
+├── <span class="dir">.github/workflows/</span>
+│   └── <span class="file">docker-build.yml</span>     <span class="desc"># CI: build &amp; push Docker image</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="dir">public/</span>
+│   │   └── <span class="file">index.html</span>          <span class="desc"># HTML template</span>
+│   ├── <span class="dir">src/</span>
+│   │   ├── <span class="file">App.js</span>              <span class="desc"># React component</span>
+│   │   └── <span class="file">index.js</span>            <span class="desc"># Entry point</span>
+│   ├── <span class="file">Dockerfile</span>              <span class="desc"># Multi-stage: node build &rarr; nginx</span>
+│   └── <span class="file">package.json</span>            <span class="desc"># Dependencies</span>
+├── <span class="dir">modules/</span>
+│   ├── <span class="dir">vpc/</span>
+│   │   └── <span class="file">main.tf</span>             <span class="desc"># VPC, subnet, IGW, SG</span>
+│   ├── <span class="dir">ecr/</span>
+│   │   └── <span class="file">main.tf</span>             <span class="desc"># Container registry</span>
+│   └── <span class="dir">ec2/</span>
+│       └── <span class="file">main.tf</span>             <span class="desc"># Spot instance + IAM</span>
+├── <span class="dir">environments/dev/</span>
+│   ├── <span class="file">backend.tf</span>              <span class="desc"># S3 state backend</span>
+│   ├── <span class="file">provider.tf</span>             <span class="desc"># AWS provider config</span>
+│   ├── <span class="file">main.tf</span>                 <span class="desc"># Wires modules together</span>
+│   ├── <span class="file">variables.tf</span>            <span class="desc"># App name, region, instance type</span>
+│   └── <span class="file">outputs.tf</span>              <span class="desc"># Public IP, ECR URL</span>
+├── <span class="file">atlantis.yaml</span>               <span class="desc"># Atlantis project config</span>
+└── <span class="file">README.md</span>
+    </div>
+
+    <!-- ===================== COST ===================== -->
+    <h2>Monthly Cost</h2>
+    <table class="cost-table">
+      <tr><th>Resource</th><th class="price">Cost</th></tr>
+      <tr><td>EC2 t4g.nano Spot</td><td class="price">~$1.50</td></tr>
+      <tr><td>ECR (3 images)</td><td class="price">~$0.02</td></tr>
+      <tr><td>S3 state bucket</td><td class="price">~$0.01</td></tr>
+      <tr><td>VPC, Subnet, IGW, SG</td><td class="price">Free</td></tr>
+      <tr><td>DynamoDB lock table</td><td class="price">Free</td></tr>
+      <tr><td>Atlantis (local Docker)</td><td class="price">Free</td></tr>
+      <tr><td>GitHub Actions</td><td class="price">Free</td></tr>
+      <tr><td>Total</td><td class="price">~$1.50/month</td></tr>
+    </table>
+
+    <!-- ===================== CLEANUP ===================== -->
+    <h2>Cleanup</h2>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-number">1</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Destroy Terraform Resources</h4>
+          <div class="command">cd environments/dev
+terraform destroy</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-number">2</div>
+        <div class="flow-line"></div>
+        <div class="flow-content">
+          <h4>Delete State Backend</h4>
+          <div class="command">aws s3 rb s3://react-app-tfstate-laith --force
+aws dynamodb delete-table --table-name terraform-locks --region us-east-1</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-number">3</div>
+        <div class="flow-content">
+          <h4>Stop Local Services</h4>
+          <div class="command">docker stop atlantis && docker rm atlantis
+# Ctrl+C ngrok</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="text-align: center; color: #475569; margin-top: 48px; font-size: 0.85rem;">
+      Generated for react-app-infra &mdash; Terraform + Atlantis + GitHub + EC2
+    </p>
+
+  </div>
+</body>
+</html>
