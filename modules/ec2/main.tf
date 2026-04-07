@@ -54,10 +54,14 @@ resource "aws_spot_instance_request" "app" {
   spot_type                   = "persistent"
   wait_for_fulfillment        = true
 
+  user_data_replace_on_change = true
+
   user_data = base64encode(<<-EOF
     #!/bin/bash
+    set -ex
     dnf install -y docker
     systemctl enable docker && systemctl start docker
+    sleep 5
     aws ecr get-login-password --region ${var.aws_region} \
       | docker login --username AWS --password-stdin ${var.ecr_repository_url}
     docker pull ${var.ecr_repository_url}:${var.image_tag}
