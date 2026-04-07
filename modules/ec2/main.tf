@@ -58,6 +58,7 @@ resource "aws_spot_instance_request" "app" {
 
   user_data = base64encode(<<-EOF
     #!/bin/bash
+    # v2 - arm image
     set -ex
     dnf install -y docker
     systemctl enable docker && systemctl start docker
