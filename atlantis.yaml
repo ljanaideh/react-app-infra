@@ -1,0 +1,9 @@
+version: 3
+projects:
+  - name: dev
+    dir: environments/dev
+    autoplan:
+      when_modified:
+        - "**/*.tf"
+        - "../../modules/**"
+      enabled: true
