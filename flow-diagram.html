@@ -33,15 +33,25 @@
     .arch-arrow { display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #334155; padding-top: 80px; }
 
     /* ---- Call Flow Diagram ---- */
-    .callflow { background: #1e293b; border-radius: 16px; padding: 32px; margin: 32px 0; border: 1px solid #334155; overflow-x: auto; }
-    .callflow-title { color: #fbbf24; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 20px; font-weight: 600; }
-    .callflow-diagram { font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace; font-size: 0.78rem; line-height: 1.8; white-space: pre; color: #94a3b8; }
-    .callflow-diagram .header { color: #38bdf8; font-weight: 700; }
-    .callflow-diagram .action { color: #22d3ee; }
-    .callflow-diagram .arrow-r { color: #22c55e; }
-    .callflow-diagram .arrow-l { color: #f59e0b; }
-    .callflow-diagram .note { color: #64748b; font-style: italic; }
-    .callflow-diagram .highlight { color: #fbbf24; }
+    .callflow { background: #1e293b; border-radius: 16px; padding: 32px; margin: 32px 0; border: 1px solid #334155; }
+    .callflow-title { color: #fbbf24; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 24px; font-weight: 600; }
+    .cf-row { display: flex; align-items: center; margin: 6px 0; min-height: 36px; }
+    .cf-num { width: 28px; height: 28px; border-radius: 50%; background: #1e40af; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; margin-right: 12px; }
+    .cf-num.green { background: #16a34a; }
+    .cf-num.yellow { background: #d97706; }
+    .cf-from { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; font-size: 0.82rem; color: #cbd5e1; min-width: 120px; text-align: center; flex-shrink: 0; }
+    .cf-from.laptop { border-color: #38bdf8; color: #38bdf8; }
+    .cf-from.github { border-color: #a78bfa; color: #a78bfa; }
+    .cf-from.ngrok { border-color: #f472b6; color: #f472b6; }
+    .cf-from.aws { border-color: #22c55e; color: #22c55e; }
+    .cf-from.ecr { border-color: #34d399; color: #34d399; }
+    .cf-from.ec2 { border-color: #fbbf24; color: #fbbf24; }
+    .cf-from.dev { border-color: #60a5fa; color: #60a5fa; }
+    .cf-arrow { color: #475569; padding: 0 8px; font-size: 1.2rem; flex-shrink: 0; }
+    .cf-arrow.right { color: #22c55e; }
+    .cf-arrow.left { color: #f59e0b; }
+    .cf-label { font-size: 0.82rem; color: #94a3b8; padding-left: 12px; flex: 1; }
+    .cf-divider { border: none; border-top: 1px dashed #334155; margin: 16px 0; }
 
     /* ---- GitOps Flow (visual pipeline) ---- */
     .pipeline { display: flex; align-items: center; justify-content: center; gap: 0; margin: 24px 0; flex-wrap: wrap; }
@@ -104,6 +114,8 @@
       .arch-arrow { display: none; }
       .resources-grid { grid-template-columns: 1fr; }
       .cleanup-grid { grid-template-columns: 1fr; }
+      .cf-row { flex-wrap: wrap; }
+      .cf-label { padding-left: 40px; width: 100%; margin-top: 4px; }
     }
     @media (max-width: 600px) {
       .tools-grid { grid-template-columns: 1fr; }
@@ -212,80 +224,165 @@
   </div>
 
   <!-- ==================== CALL FLOW ==================== -->
-  <h2>Call Flow Diagram</h2>
+  <h2>Call Flow</h2>
 
   <div class="callflow">
-    <div class="callflow-title">Infrastructure Change Flow (Terraform via Atlantis)</div>
-    <div class="callflow-diagram">
-<span class="header">  Developer               Laptop                  ngrok                   GitHub                  AWS</span>
-<span class="header">      |                     |                       |                       |                       |</span>
-<span class="action">      |  git push            |                       |                       |                       |</span>
-      | <span class="arrow-r">-------------------&gt;</span> |  push to remote        |                       |                       |
-      |                     | <span class="arrow-r">---------------------&gt;</span> |                       |                       |
-      |                     |                       | <span class="arrow-r">---------------------&gt;</span> |                       |
-      |                     |                       |                       |                       |
-<span class="action">      |                       |                       |  Open Pull Request      |                       |</span>
-      |                     |                       |                       |                       |
-<span class="action">      |                       |                       |  Webhook: PR opened     |                       |</span>
-      |                     |                       | <span class="arrow-l">&lt;---------------------</span> |                       |
-      |                     | <span class="arrow-l">&lt;---------------------</span> | <span class="note"> ngrok tunnels to :4141</span> |                       |
-      |                     |                       |                       |                       |
-<span class="action">      |                     Atlantis: terraform plan  |                       |                       |</span>
-      |                     | <span class="arrow-r">---------------------------------------------------&gt;</span> | <span class="note"> reads state</span>    |
-      |                     | <span class="arrow-l">&lt;---------------------------------------------------</span> | <span class="note"> returns plan</span>   |
-      |                     |                       |                       |                       |
-<span class="action">      |                     Atlantis: post plan comment|                       |                       |</span>
-      |                     | <span class="arrow-r">---------------------&gt;</span> |                       |                       |
-      |                     |                       | <span class="arrow-r">---------------------&gt;</span> | <span class="note"> PR comment</span>     |
-      |                     |                       |                       |                       |
-<span class="highlight">      |  Review plan in PR    |                       |                       |                       |</span>
-<span class="highlight">      |  Comment: "atlantis apply -p dev"              |                       |                       |</span>
-      |                     |                       |                       |                       |
-<span class="action">      |                       |                       |  Webhook: comment       |                       |</span>
-      |                     |                       | <span class="arrow-l">&lt;---------------------</span> |                       |
-      |                     | <span class="arrow-l">&lt;---------------------</span> | <span class="note"> ngrok tunnels to :4141</span> |                       |
-      |                     |                       |                       |                       |
-<span class="action">      |                     Atlantis: terraform apply  |                       |                       |</span>
-      |                     | <span class="arrow-r">---------------------------------------------------&gt;</span> | <span class="note"> creates resources</span> |
-      |                     | <span class="arrow-l">&lt;---------------------------------------------------</span> | <span class="note"> VPC, ECR, EC2</span>  |
-      |                     |                       |                       |                       |
-<span class="action">      |                     Atlantis: post apply result |                       |                       |</span>
-      |                     | <span class="arrow-r">---------------------&gt;</span> |                       |                       |
-      |                     |                       | <span class="arrow-r">---------------------&gt;</span> | <span class="note"> PR comment</span>     |
-      |                     |                       |                       |                       |
-<span class="highlight">      |  Merge PR             |                       |                       |          DONE          |</span>
-<span class="header">      |                     |                       |                       |                       |</span>
+    <div class="callflow-title">1. Infrastructure Change &mdash; Terraform via Atlantis</div>
+
+    <div class="cf-row">
+      <div class="cf-num">1</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from laptop">Laptop</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label"><code>git push</code> &mdash; push .tf changes to branch, open PR</div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num yellow">2</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ngrok">ngrok</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-label">Webhook fires: <em>"PR opened"</em> &rarr; tunneled to localhost:4141</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num">3</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from aws">AWS</div>
+      <div class="cf-label">Runs <code>terraform plan</code> &mdash; reads state from S3, calculates changes</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num">4</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label">Posts plan output as a comment on the PR</div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num yellow">5</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label">Reviews plan, comments: <code>atlantis apply -p dev</code></div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num yellow">6</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ngrok">ngrok</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-label">Webhook fires: <em>"comment created"</em> &rarr; tunneled to localhost:4141</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num green">7</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from aws">AWS</div>
+      <div class="cf-label">Runs <code>terraform apply</code> &mdash; creates VPC, ECR, EC2 Spot</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num green">8</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label">Posts apply result on PR &mdash; <strong>infrastructure live!</strong></div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num green">9</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label">Merges PR &mdash; main branch updated, done</div>
     </div>
   </div>
 
   <div class="callflow">
-    <div class="callflow-title">App Deployment Flow (Docker Image)</div>
-    <div class="callflow-diagram">
-<span class="header">  Developer               Laptop                  ECR (AWS)               EC2 (AWS)</span>
-<span class="header">      |                     |                       |                       |</span>
-<span class="action">      |  docker buildx        |                       |                       |</span>
-      | <span class="arrow-r">-------------------&gt;</span> | <span class="note"> build ARM image</span>      |                       |
-      |                     |                       |                       |                       |
-<span class="action">      |  docker push           |                       |                       |</span>
-      |                     | <span class="arrow-r">---------------------&gt;</span> | <span class="note"> store image</span>           |
-      |                     |                       |                       |                       |
-<span class="action">      |  atlantis apply        |                       |                       |</span>
-      |                     | <span class="note"> terraform replaces EC2</span> |                       |
-      |                     | <span class="arrow-r">---------------------------------------------&gt;</span> | <span class="note"> new instance</span>  |
-      |                     |                       |                       |                       |
-<span class="action">      |                       |                       |  EC2 boots (user_data)  |</span>
-      |                     |                       | <span class="arrow-l">&lt;---------------------</span> | <span class="note"> docker pull</span>    |
-      |                     |                       | <span class="arrow-r">---------------------&gt;</span> | <span class="note"> image received</span> |
-      |                     |                       |                       |                       |
-<span class="action">      |                       |                       |  docker run             |</span>
-      |                     |                       |                       | <span class="note"> nginx on :80</span>   |
-      |                     |                       |                       |                       |
-<span class="highlight">      |  http://PUBLIC_IP      |                       |                       |</span>
-      | <span class="arrow-r">----------------------------------------------------------&gt;</span> | <span class="note"> React app!</span>    |
-      | <span class="arrow-l">&lt;----------------------------------------------------------</span> | <span class="note"> HTML/JS/CSS</span>    |
-      |                     |                       |                       |                       |
-<span class="highlight">      |                       |                       |             APP LIVE   |</span>
-<span class="header">      |                     |                       |                       |</span>
+    <div class="callflow-title">2. App Deployment &mdash; Docker Image to EC2</div>
+
+    <div class="cf-row">
+      <div class="cf-num">1</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from laptop">Laptop</div>
+      <div class="cf-label"><code>docker buildx --platform linux/arm64</code> &mdash; build ARM image</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num">2</div>
+      <div class="cf-from laptop">Laptop</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ecr">ECR</div>
+      <div class="cf-label"><code>docker push</code> &mdash; upload image to AWS container registry</div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num yellow">3</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-label">Push user_data change &rarr; Atlantis plans EC2 replacement</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num yellow">4</div>
+      <div class="cf-from github">GitHub</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ngrok">ngrok</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from laptop">Atlantis</div>
+      <div class="cf-label">Comment <code>atlantis apply</code> &rarr; Atlantis destroys old EC2, creates new one</div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num green">5</div>
+      <div class="cf-from ec2">EC2</div>
+      <div class="cf-label">New instance boots, runs user_data script</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num green">6</div>
+      <div class="cf-from ec2">EC2</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ecr">ECR</div>
+      <div class="cf-label"><code>docker pull</code> &mdash; downloads the ARM image</div>
+    </div>
+
+    <div class="cf-row">
+      <div class="cf-num green">7</div>
+      <div class="cf-from ec2">EC2</div>
+      <div class="cf-label"><code>docker run -p 80:80</code> &mdash; nginx serves the React app</div>
+    </div>
+
+    <hr class="cf-divider">
+
+    <div class="cf-row">
+      <div class="cf-num green">8</div>
+      <div class="cf-from dev">Developer</div>
+      <div class="cf-arrow right">&rarr;</div>
+      <div class="cf-from ec2">EC2 :80</div>
+      <div class="cf-label"><code>http://PUBLIC_IP</code> &mdash; <strong>React app is live!</strong></div>
     </div>
   </div>
 
