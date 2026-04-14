@@ -1,0 +1,36 @@
+# Terraform — never commit local working dir or state blobs
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+.terraform.tfstate.lock.info
+# Commit .terraform.lock.hcl for consistent providers
+
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+.env
+.env.*
+!.env.example
+
+node_modules/
+app/build/
+app/coverage/
+
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+*.pem
