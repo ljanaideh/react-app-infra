@@ -1,0 +1,53 @@
+# Manually replace the EC2 Spot instance so user_data runs again (pulls :latest from ECR).
+# Push a new image to ECR before running this workflow.
+#
+# Requires repo secret: AWS_ROLE_ARN (OIDC role allowed to run Terraform against this state).
+
+name: Replace EC2 instance
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: '1.7.5'
+  TF_DIR: environments/dev
+  REPLACE_TARGET: module.ec2.aws_spot_instance_request.app
+
+jobs:
+  replace-ec2:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform init
+        working-directory: ${{ env.TF_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform apply (replace instance)
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          terraform apply -replace="${{ env.REPLACE_TARGET }}" -auto-approve
+
+      - name: Show app URL
+        working-directory: ${{ env.TF_DIR }}
+        run: |
+          IP=$(terraform output -raw public_ip)
+          echo "App URL: http://${IP}"
