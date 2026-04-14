@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create &amp; Destroy — React App Infra</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px 20px; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 2.2rem; margin-bottom: 8px; color: #f8fafc; }
+    .subtitle { text-align: center; color: #64748b; margin-bottom: 28px; font-size: 1.02rem; }
+    h2 { font-size: 1.35rem; margin: 40px 0 16px; color: #38bdf8; border-bottom: 1px solid #1e3a5f; padding-bottom: 10px; text-transform: uppercase; font-weight: 600; }
+    h3 { font-size: 1rem; color: #fbbf24; margin: 24px 0 12px; letter-spacing: 0.3px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 24px 0; }
+    @media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+    .panel { border-radius: 16px; padding: 28px; border: 1px solid #334155; }
+    .panel.create { background: linear-gradient(180deg, rgba(22,163,74,0.12) 0%, #1e293b 40%); border-color: rgba(34,197,94,0.35); }
+    .panel.destroy { background: linear-gradient(180deg, rgba(248,113,113,0.1) 0%, #1e293b 40%); border-color: rgba(248,113,113,0.35); }
+    .panel h3.panel-title { font-size: 1rem; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel.create .panel-title { color: #4ade80; }
+    .panel.destroy .panel-title { color: #f87171; }
+    .step-list { list-style: none; counter-reset: s; }
+    .step-list li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 14px; font-size: 0.88rem; color: #cbd5e1; }
+    .step-list li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .panel.create .step-list li::before { background: #166534; color: #fff; }
+    .panel.destroy .step-list li::before { background: #991b1b; color: #fff; }
+    .cmd { background: #0f172a; border: 1px solid #1e3a5f; border-radius: 8px; padding: 12px 16px; margin-top: 8px; margin-bottom: 12px; font-family: ui-monospace, monospace; font-size: 0.74rem; color: #22d3ee; overflow-x: auto; white-space: pre; line-height: 1.5; }
+    .note { font-size: 0.82rem; color: #94a3b8; margin-top: 8px; font-style: italic; }
+    .kv { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px 18px; margin: 12px 0; font-size: 0.85rem; }
+    .kv-row { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-row span { color: #64748b; min-width: 140px; }
+    .compare-table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 20px 0; background: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; }
+    .compare-table th { padding: 12px 16px; text-align: left; font-size: 0.78rem; text-transform: uppercase; background: #0f172a; }
+    .compare-table th.create { color: #4ade80; width: 50%; }
+    .compare-table th.destroy { color: #f87171; width: 50%; }
+    .compare-table td { padding: 14px 16px; font-size: 0.88rem; color: #cbd5e1; border-top: 1px solid #0f172a; vertical-align: top; }
+    .compare-table td code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 0.82rem; color: #7dd3fc; }
+    .flow-row { display: flex; align-items: flex-start; gap: 12px; margin: 10px 0; font-size: 0.85rem; color: #94a3b8; }
+    .tag { flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; }
+    .tag.destroy { background: rgba(248,113,113,0.2); color: #fca5a5; }
+    .footer { text-align: center; color: #334155; margin-top: 48px; font-size: 0.8rem; padding-top: 24px; border-top: 1px solid #1e293b; }
+    .banner { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px 20px; margin: 20px 0; font-size: 0.88rem; color: #94a3b8; }
+    .banner strong { color: #e2e8f0; }
+    .block { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px 22px; margin: 16px 0; }
+    a { color: #38bdf8; }
+    p.lead { color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Create &amp; Destroy</h1>
+  <p class="subtitle">Full steps: S3 + Terraform state, Atlantis (Docker), AWS, app image &mdash; <code style="background:#334155;padding:2px 8px;border-radius:4px;color:#7dd3fc;">environments/dev</code></p>
+
+  <div class="banner">
+    <strong>Remote state lives in S3.</strong> The Terraform <strong>state file</strong> object is set by <code>backend.tf</code> (bucket + <code>key</code>). This project uses <code>use_lockfile = true</code> (S3-native locking). You do <strong>not</strong> need DynamoDB for state locks unless you change the backend to use <code>dynamodb_table</code>.
+  </div>
+
+  <div class="kv">
+    <div class="kv-row"><span>State bucket</span><code>react-app-tfstate-laith</code> (change in <code>backend.tf</code> if yours differs)</div>
+    <div class="kv-row"><span>State object (key)</span><code>dev/terraform.tfstate</code></div>
+    <div class="kv-row"><span>Region</span><code>us-east-1</code></div>
+    <div class="kv-row"><span>Locking</span>S3 lockfile (Terraform manages lock objects in the same bucket)</div>
+  </div>
+
+  <h2>Create &mdash; all steps</h2>
+
+  <h3>1) AWS CLI credentials</h3>
+  <p class="lead">Install AWS CLI; configure a profile or env vars Terraform and Atlantis can use.</p>
+  <div class="cmd">aws configure
+# or export AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_REGION</div>
+
+  <h3>2) S3 bucket for Terraform state (before first <code>terraform init</code>)</h3>
+  <p class="lead">Bucket name must match <code>environments/dev/backend.tf</code>. Creating the bucket does not create the state file; <code>terraform init</code> + <code>apply</code> upload <code>dev/terraform.tfstate</code> to S3.</p>
+  <div class="cmd">export AWS_REGION=us-east-1
+export TF_STATE_BUCKET=react-app-tfstate-laith
+
+aws s3 mb "s3://${TF_STATE_BUCKET}" --region "${AWS_REGION}"
+
+aws s3api put-bucket-versioning \
+  --bucket "${TF_STATE_BUCKET}" \
+  --versioning-configuration Status=Enabled
+
+aws s3api put-bucket-encryption \
+  --bucket "${TF_STATE_BUCKET}" \
+  --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+
+aws s3api put-public-access-block \
+  --bucket "${TF_STATE_BUCKET}" \
+  --public-access-block-configuration \
+    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true</div>
+  <p class="note">Do not delete this bucket while Terraform still manages infrastructure; the state file is the source of truth.</p>
+
+  <h3>3) (Optional) DynamoDB table for locking</h3>
+  <p class="lead">Only if you switch <code>backend.tf</code> to use <code>dynamodb_table</code>. Current config does <strong>not</strong> require it.</p>
+  <div class="cmd">aws dynamodb create-table \
+  --table-name terraform-locks \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region us-east-1</div>
+
+  <h3>4) Atlantis (Docker) + GitHub webhook</h3>
+  <p class="lead">Atlantis runs on your machine (or a server). GitHub must reach it; locally use <strong>ngrok</strong> on port <strong>4141</strong>.</p>
+  <div class="cmd">ngrok http 4141
+# Copy https://YOUR-SUBDOMAIN.ngrok-free.app</div>
+  <div class="cmd">docker run -d --name atlantis --restart unless-stopped -p 4141:4141 \
+  -e ATLANTIS_GH_USER="YOUR_GITHUB_USERNAME" \
+  -e ATLANTIS_GH_TOKEN="ghp_YOUR_PAT_WITH_REPO_SCOPE" \
+  -e ATLANTIS_REPO_ALLOWLIST="github.com/YOUR_USER_OR_ORG/react-app-infra" \
+  -e ATLANTIS_ATLANTIS_URL="https://YOUR-SUBDOMAIN.ngrok-free.app" \
+  -e AWS_ACCESS_KEY_ID="YOUR_AWS_ACCESS_KEY" \
+  -e AWS_SECRET_ACCESS_KEY="YOUR_AWS_SECRET_KEY" \
+  -e AWS_REGION="us-east-1" \
+  ghcr.io/runatlantis/atlantis:latest server</div>
+  <p class="lead"><strong>GitHub webhook:</strong> Payload URL <code>https://YOUR-SUBDOMAIN.ngrok-free.app/events</code> &mdash; events: Pull requests, Issue comments, Pushes as needed. Match webhook secret to Atlantis if you set one.</p>
+  <div class="cmd">docker logs -f atlantis</div>
+
+  <h3>5) Terraform: init, plan, apply (<code>environments/dev</code>)</h3>
+  <p class="lead">State reads/writes S3 after init.</p>
+  <div class="cmd">cd environments/dev
+terraform init
+terraform plan
+terraform apply</div>
+  <p class="lead">With Atlantis: open a PR &rarr; plan &rarr; comment <code>atlantis apply -p dev</code> when ready.</p>
+
+  <h3>6) Container image to ECR (ARM for Graviton EC2)</h3>
+  <div class="cmd">./scripts/docker-push-ecr.sh</div>
+  <p class="note">If EC2 booted before the image existed, bump <code>user_data</code> or run <code>./scripts/replace-ec2-instance.sh</code>, then apply again.</p>
+
+  <h3>7) Open the app</h3>
+  <div class="cmd">terraform output public_ip
+# browser: http://PUBLIC_IP</div>
+
+  <h2>Destroy &mdash; order matters</h2>
+  <div class="split">
+    <div class="panel destroy">
+      <h3 class="panel-title">Teardown</h3>
+      <ol class="step-list">
+        <li>Run <code>terraform destroy</code> in <code>environments/dev</code> while state still exists in S3.</li>
+        <li>Confirm resources gone in AWS Console.</li>
+        <li><strong>Then</strong> empty the state bucket (state file + lock objects), then delete the bucket.</li>
+        <li>Delete DynamoDB lock table only if you used that backend mode.</li>
+        <li><code>docker stop atlantis</code>; stop ngrok.</li>
+      </ol>
+      <div class="cmd">cd environments/dev
+terraform destroy</div>
+      <div class="cmd">aws s3 rb s3://react-app-tfstate-laith --force</div>
+      <p class="note"><code>--force</code> empties the bucket. Adjust name. DynamoDB (only if used): <code>aws dynamodb delete-table --table-name terraform-locks --region us-east-1</code></p>
+    </div>
+    <div class="panel create" style="border-color: rgba(56,189,248,0.35); background: linear-gradient(180deg, rgba(56,189,248,0.08) 0%, #1e293b 40%);">
+      <h3 class="panel-title" style="color:#38bdf8;">Quick ref</h3>
+      <p class="lead" style="margin-top:0;">Terraform does not delete your git repo, local Docker images, or <code>~/.aws</code>. GitHub webhooks are manual.</p>
+      <div class="flow-row"><span class="tag destroy">State</span> Keep S3 until after <code>destroy</code>; then empty + delete bucket.</div>
+      <div class="flow-row"><span class="tag destroy">Atlantis</span> Stop container when done.</div>
+    </div>
+  </div>
+
+  <h2>Side-by-side</h2>
+  <table class="compare-table">
+    <tr><th class="create">Create</th><th class="destroy">Destroy</th></tr>
+    <tr><td>S3 bucket; <code>init</code> uses state at <code>key</code> in S3.</td><td><code>destroy</code> first; then delete state in S3 + bucket.</td></tr>
+    <tr><td>Atlantis Docker + ngrok + webhook <code>.../events</code>.</td><td>Stop Atlantis &amp; ngrok manually.</td></tr>
+    <tr><td>Push ARM image; replace EC2 if needed.</td><td>ECR/local Docker unchanged unless you delete the repo.</td></tr>
+  </table>
+
+  <p class="footer">react-app-infra &mdash; <a href="flow-diagram.html">flow-diagram.html</a></p>
+</div>
+</body>
+</html>
