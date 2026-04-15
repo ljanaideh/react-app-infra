@@ -80,6 +80,17 @@ Do not mount a Docker volume on `/home/atlantis/.atlantis` unless the mount is w
 
 ngrok is forwarding to your machine, but nothing is accepting connections on that port yet (or the Atlantis container exited). The script waits for the port before starting ngrok; if you still see this, run **`docker ps`** (look for **atlantis-local**), **`curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4141/`**, and **`docker logs atlantis-local`**.
 
+**`Error finding AWS credentials` / `NoCredentialProviders` (Terragrunt plan)**
+
+The container must see the same AWS config you use on your laptop. The script mounts **`$HOME/.aws` → `/home/atlantis/.aws`** (read-only) and loads **`scripts/.env.atlantis.local`** into the process.
+
+1. On the **host**, confirm credentials work: **`aws sts get-caller-identity`** (with **`--profile your-profile`** if you use named profiles).
+2. In **`scripts/.env.atlantis.local`**, set **`AWS_PROFILE`** to that profile name (not `default` unless that is the profile you actually use). Set **`AWS_SDK_LOAD_CONFIG=1`** if the profile is defined in **`~/.aws/config`** (common for **AWS SSO** — run **`aws sso login --profile your-profile`** before planning).
+3. **Restart** the container after editing the env file: **`./scripts/run-atlantis-local.sh`** (it recreates the container).
+4. Quick check: **`docker exec atlantis-local env | grep '^AWS_'`** — you should see **`AWS_PROFILE`** and region vars.
+
+If **`~/.aws`** is missing or empty on the host, the mount will not help; configure **`aws configure`** or SSO first.
+
 ## Hosted Atlantis (GitHub PR checks)
 
 **Errors like** **`repo config not allowed to define custom workflows`** happen when **`workflows:`** appears in the **repo** `atlantis.yaml` but the server does not set **`allow_custom_workflows: true`** for that repo.
