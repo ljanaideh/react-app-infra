@@ -93,6 +93,12 @@ atlantis server --repo-config=/path/to/repos.yaml
 
 That file includes **`repos`**, **`allow_custom_workflows`**, and **`workflows.default`** with **`terragrunt plan` / `terragrunt apply`**. If your org shares one Atlantis across many repos, scope **`repos[].id`** (e.g. `github.com/ljanaideh/react-app-infra`) or merge the **`workflows.default`** block into your existing server config carefully.
 
+### `Required plugins are not installed` / AWS provider not in `.terraform/providers`
+
+If Atlantis logs show **`/usr/local/bin/terraform plan`** (not **`terragrunt plan`**), the server is still using the **stock Terraform workflow**. Under `environments/dev` and `environments/dev-fargate` there are only **`terragrunt.hcl`** files plus **`.terraform.lock.hcl`** — no `*.tf` in those directories. Plain **`terraform init`** treats that as an **empty** Terraform root, so it **does not** download the AWS provider; **`terraform plan`** then fails with a lock-file / provider cache error.
+
+**Fix:** Load [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml) on the server (`--repo-config` / `ATLANTIS_REPO_CONFIG`) and ensure the Atlantis image (or `$PATH`) includes **`terragrunt`** (see [Dockerfile](../docker/atlantis/Dockerfile)). After redeploy, logs should show **`terragrunt plan`**.
+
 ## Security
 
 Never commit `scripts/.env.atlantis.local`. Rotate tokens if exposed.

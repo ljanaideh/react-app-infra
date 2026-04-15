@@ -3,6 +3,8 @@ version: 3
 # (see docker/atlantis/repos.yaml or docs/atlantis-server-config.example.yaml). Hosted
 # Atlantis cannot run custom workflows from this repo unless the server sets
 # allow_custom_workflows: true; moving workflows server-side avoids that requirement.
+# If PR checks run `terraform plan` (not `terragrunt plan`), the server is not using that
+# repo-config — plain Terraform sees no *.tf here and provider install/plan will fail.
 projects:
   - name: dev
     dir: environments/dev
