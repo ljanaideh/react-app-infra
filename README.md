@@ -29,6 +29,7 @@ Open these in a browser (or `file:///...`). The React app shell is under `app/`;
 |------|---|
 | Dev (EC2) | [docs/terragrunt-dev.md](docs/terragrunt-dev.md) |
 | Fargate | [docs/terragrunt-dev-fargate.md](docs/terragrunt-dev-fargate.md) |
+| EmDash local (phase 1) | [docs/emdash-local-phase1.md](docs/emdash-local-phase1.md) |
 | Local Atlantis | [docs/atlantis-local.md](docs/atlantis-local.md) |
 
 Install [Terragrunt](https://terragrunt.gruntwork.io/docs/getting-started/install/), then:
