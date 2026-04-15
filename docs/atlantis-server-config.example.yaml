@@ -1,0 +1,34 @@
+# Example Atlantis SERVER-SIDE config (not committed as atlantis.yaml in the repo).
+# Install: point your Atlantis deployment at this file:
+#   atlantis server --repo-config=/path/to/atlantis-server-config.example.yaml
+# or set ATLANTIS_REPO_CONFIG to that path.
+#
+# Same content as docker/atlantis/repos.yaml in this repository.
+
+repos:
+  - id: /.*/
+    allow_custom_workflows: true
+    allowed_overrides: [workflow]
+
+workflows:
+  default:
+    plan:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run:
+            command: terragrunt plan -input=false -out=$PLANFILE
+            output: strip_refreshing
+    apply:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run: terragrunt apply -input=false $PLANFILE

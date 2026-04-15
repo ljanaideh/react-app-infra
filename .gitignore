@@ -1,4 +1,4 @@
-# Terraform — never commit local working dir or state blobs
+# Terraform
 .terraform/
 *.tfstate
 *.tfstate.*
@@ -8,7 +8,6 @@ override.tf
 override.tf.json
 *_override.tf
 .terraform.tfstate.lock.info
-# Commit .terraform.lock.hcl for consistent providers
 
 *.tfvars
 *.tfvars.json
@@ -34,3 +33,14 @@ yarn-debug.log*
 *~
 
 *.pem
+
+# Terragrunt
+.terragrunt-cache/
+
+# Local Atlantis (secrets + ngrok)
+scripts/.env.atlantis.local
+.env.atlantis.local
+scripts/.atlantis-ngrok.pid
+scripts/.atlantis-ngrok.log
+terragrunt_rendered.json
+*_rendered.json

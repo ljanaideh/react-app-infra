@@ -54,14 +54,14 @@
   <p class="subtitle">Full steps: S3 + Terraform state, Atlantis (Docker), AWS, app image &mdash; <code style="background:#334155;padding:2px 8px;border-radius:4px;color:#7dd3fc;">environments/dev</code></p>
 
   <div class="banner">
-    <strong>Remote state lives in S3.</strong> The Terraform <strong>state file</strong> object is set by <code>backend.tf</code> (bucket + <code>key</code>). This project uses <code>use_lockfile = true</code> (S3-native locking). You do <strong>not</strong> need DynamoDB for state locks unless you change the backend to use <code>dynamodb_table</code>.
+    <strong>Remote state lives in S3.</strong> The Terraform <strong>state file</strong> object is set by <code>backend.tf</code> (bucket + <code>key</code>). For <strong>remote state locking</strong>, either add a <code>dynamodb_table</code> to the backend, or use Terraform <strong>1.10+</strong> and uncomment <code>use_lockfile = true</code> in the root <code>terragrunt.hcl</code> (S3-native locks).
   </div>
 
   <div class="kv">
     <div class="kv-row"><span>State bucket</span><code>react-app-tfstate-laith</code> (change in <code>backend.tf</code> if yours differs)</div>
     <div class="kv-row"><span>State object (key)</span><code>dev/terraform.tfstate</code></div>
     <div class="kv-row"><span>Region</span><code>us-east-1</code></div>
-    <div class="kv-row"><span>Locking</span>S3 lockfile (Terraform manages lock objects in the same bucket)</div>
+    <div class="kv-row"><span>Locking</span>Optional: DynamoDB table, or <code>use_lockfile</code> with Terraform 1.10+ (see root <code>terragrunt.hcl</code>)</div>
   </div>
 
   <h2>Create &mdash; all steps</h2>
@@ -125,7 +125,8 @@ terraform plan
 terraform apply</div>
   <p class="lead">With Atlantis: open a PR &rarr; plan &rarr; comment <code>atlantis apply -p dev</code> when ready.</p>
 
-  <h3>6) Container image to ECR (ARM for Graviton EC2)</h3>
+  <h3>6) Container image to ECR</h3>
+  <p class="lead">Fargate (default, ARM64): <code>./scripts/docker-push-ecr.sh</code> — EC2 dev (amd64): <code>DEPLOY=ec2 ./scripts/docker-push-ecr.sh</code></p>
   <div class="cmd">./scripts/docker-push-ecr.sh</div>
   <p class="note">If EC2 booted before the image existed, bump <code>user_data</code> or run <code>./scripts/replace-ec2-instance.sh</code>, then apply again.</p>
 

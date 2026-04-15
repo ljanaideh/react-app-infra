@@ -1,0 +1,31 @@
+# Full Atlantis SERVER config: pass as atlantis server --repo-config=/path/to/this/file
+# (image copies to /etc/atlantis/repos.yaml). Defines default Terragrunt workflow so the
+# repo atlantis.yaml does not need a workflows: block.
+
+repos:
+  - id: /.*/
+    allow_custom_workflows: true
+    allowed_overrides: [workflow]
+
+workflows:
+  default:
+    plan:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run:
+            command: terragrunt plan -input=false -out=$PLANFILE
+            output: strip_refreshing
+    apply:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run: terragrunt apply -input=false $PLANFILE

@@ -1,10 +1,17 @@
 variable "app_name" {}
 
+locals {
+  name_safe = replace(var.app_name, "_", "-")
+}
+
 resource "aws_ecr_repository" "app" {
-  name                 = var.app_name
+  name                 = local.name_safe
   image_tag_mutability = "MUTABLE"
   force_delete         = true
-  image_scanning_configuration { scan_on_push = false }
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_lifecycle_policy" "app" {
@@ -23,4 +30,10 @@ resource "aws_ecr_lifecycle_policy" "app" {
   })
 }
 
-output "repository_url" { value = aws_ecr_repository.app.repository_url }
+output "repository_url" {
+  value = aws_ecr_repository.app.repository_url
+}
+
+output "repository_arn" {
+  value = aws_ecr_repository.app.arn
+}
