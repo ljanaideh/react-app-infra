@@ -2,7 +2,6 @@ version: 3
 projects:
   - name: dev
     dir: environments/dev
-    workflow: terragrunt
     autoplan:
       when_modified:
         - "**/*.hcl"
@@ -11,7 +10,6 @@ projects:
       enabled: true
   - name: dev-fargate
     dir: environments/dev-fargate
-    workflow: terragrunt
     autoplan:
       when_modified:
         - "**/*.hcl"
@@ -19,8 +17,10 @@ projects:
         - "../../modules/**/*.tf"
       enabled: true
 
+# Use workflow name "default" (do not set projects[].workflow) so strict Atlantis servers
+# accept this file without allow_repo_config_workflow / allowed_overrides: [workflow].
 workflows:
-  terragrunt:
+  default:
     plan:
       steps:
         - env:
@@ -42,4 +42,5 @@ workflows:
             value: "true"
         - run: terragrunt apply -input=false $PLANFILE
 
-# Requires an Atlantis image (or sidecar) with Terragrunt installed. Same workflow for dev + dev-fargate.
+# Image must include Terragrunt. If your server still rejects repo workflows, set
+# allow_custom_workflows: true (see docker/atlantis/repos.yaml).

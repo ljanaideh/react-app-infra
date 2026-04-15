@@ -11,4 +11,6 @@ RUN curl -fsSL -o /usr/local/bin/terragrunt \
   "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_amd64" \
   && chmod +x /usr/local/bin/terragrunt
 
+COPY repos.yaml /etc/atlantis/repos.yaml
+
 USER atlantis

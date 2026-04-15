@@ -80,6 +80,26 @@ Do not mount a Docker volume on `/home/atlantis/.atlantis` unless the mount is w
 
 ngrok is forwarding to your machine, but nothing is accepting connections on that port yet (or the Atlantis container exited). The script waits for the port before starting ngrok; if you still see this, run **`docker ps`** (look for **atlantis-local**), **`curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:4141/`**, and **`docker logs atlantis-local`**.
 
+## Hosted Atlantis (GitHub PR checks)
+
+If you see **`repo config not allowed to set 'workflow'`** or **`allow_repo_config_workflow`**, the **server** must allow repo-level workflows. Options:
+
+1. **Repo `atlantis.yaml`** in this project uses **`workflows.default`** only (no **`projects[].workflow`**), which works on most servers.
+2. If the server still blocks custom **`workflows:`** in the repo file, add **server-side** config (same idea as [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml)):
+   - **`allow_custom_workflows: true`**
+   - **`allowed_overrides: [workflow]`** (only if you reintroduce per-project `workflow:`)
+
+Example **`repos.yaml`** passed to **`atlantis server --repo-config=...`**:
+
+```yaml
+repos:
+  - id: /.*/
+    allow_custom_workflows: true
+    allowed_overrides: [workflow]
+```
+
+Or **`ATLANTIS_REPO_CONFIG_JSON`** with the same under **`repos`**.
+
 ## Security
 
 Never commit `scripts/.env.atlantis.local`. Rotate tokens if exposed.

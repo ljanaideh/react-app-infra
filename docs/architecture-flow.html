@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terraform + Atlantis + AWS Architecture Flow</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #1a1a2e; padding: 40px 20px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { text-align: center; font-size: 28px; margin-bottom: 8px; color: #1a1a2e; }
+  .subtitle { text-align: center; font-size: 14px; color: #666; margin-bottom: 40px; }
+  .cost-badge { text-align: center; margin-bottom: 40px; }
+  .cost-badge span { background: #10b981; color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+
+  .flow-section { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  .column { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .column h2 { font-size: 16px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid; }
+  .col-dev h2 { color: #6366f1; border-color: #6366f1; }
+  .col-github h2 { color: #1a1a2e; border-color: #1a1a2e; }
+  .col-aws h2 { color: #f59e0b; border-color: #f59e0b; }
+
+  .component { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+  .component .name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .component .desc { font-size: 12px; color: #64748b; }
+  .component.highlight { border-color: #6366f1; background: #eef2ff; }
+
+  .steps { margin-bottom: 40px; }
+  .steps h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+  .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .step { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; gap: 16px; align-items: flex-start; }
+  .step-num { background: #6366f1; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .step-content h3 { font-size: 14px; margin-bottom: 4px; }
+  .step-content p { font-size: 12px; color: #64748b; }
+  .step.infra .step-num { background: #f59e0b; }
+  .step.app .step-num { background: #10b981; }
+
+  .flow-arrows { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px; }
+  .flow-arrows h2 { font-size: 20px; margin-bottom: 20px; text-align: center; }
+  .arrow-flow { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; align-items: center; font-size: 14px; }
+  .arrow-flow .box { background: #eef2ff; border: 1px solid #c7d2fe; padding: 8px 14px; border-radius: 6px; font-weight: 500; }
+  .arrow-flow .arrow { color: #6366f1; font-size: 20px; }
+  .flow-label { text-align: center; font-size: 12px; color: #64748b; margin-top: 12px; font-style: italic; }
+
+  .resources { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 40px; }
+  .resources h2 { font-size: 20px; margin-bottom: 16px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 8px 12px; background: #f8fafc; font-size: 13px; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+  .free { color: #10b981; font-weight: 600; }
+  .paid { color: #f59e0b; font-weight: 600; }
+
+  .commands { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .commands h2 { font-size: 20px; margin-bottom: 16px; text-align: center; }
+  .cmd-group { margin-bottom: 16px; }
+  .cmd-group h3 { font-size: 14px; margin-bottom: 8px; color: #6366f1; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Terraform + Atlantis + AWS</h1>
+<p class="subtitle">Containerized React App on EC2 Spot &mdash; GitOps Workflow</p>
+<div class="cost-badge"><span>Total Cost: ~$1.50/month</span></div>
+
+<div class="flow-section">
+  <div class="column col-dev">
+    <h2>Developer (Local)</h2>
+    <div class="component highlight">
+      <div class="name">Laptop</div>
+      <div class="desc">Write code, git push</div>
+    </div>
+    <div class="component">
+      <div class="name">Atlantis (Docker)</div>
+      <div class="desc">Runs terraform plan/apply on PR events</div>
+    </div>
+    <div class="component">
+      <div class="name">ngrok</div>
+      <div class="desc">Tunnel to expose Atlantis to GitHub webhooks</div>
+    </div>
+  </div>
+
+  <div class="column col-github">
+    <h2>GitHub</h2>
+    <div class="component">
+      <div class="name">Repository</div>
+      <div class="desc">react-app-infra &mdash; Terraform + app code</div>
+    </div>
+    <div class="component highlight">
+      <div class="name">Pull Request</div>
+      <div class="desc">All infra changes go through PRs</div>
+    </div>
+    <div class="component">
+      <div class="name">Webhook</div>
+      <div class="desc">Sends PR events to Atlantis via ngrok</div>
+    </div>
+    <div class="component">
+      <div class="name">GitHub Actions</div>
+      <div class="desc">Builds Docker image, pushes to ECR</div>
+    </div>
+  </div>
+
+  <div class="column col-aws">
+    <h2>AWS</h2>
+    <div class="component">
+      <div class="name">VPC + Public Subnet</div>
+      <div class="desc">10.0.0.0/16 &mdash; single AZ, internet gateway</div>
+    </div>
+    <div class="component">
+      <div class="name">ECR</div>
+      <div class="desc">Container registry &mdash; stores Docker images</div>
+    </div>
+    <div class="component highlight">
+      <div class="name">EC2 Spot (t4g.nano)</div>
+      <div class="desc">Runs Docker + React app on port 80</div>
+    </div>
+    <div class="component">
+      <div class="name">S3 + DynamoDB</div>
+      <div class="desc">Terraform state storage + locking</div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrows">
+  <h2>Infrastructure Change Flow</h2>
+  <div class="arrow-flow">
+    <div class="box">git push</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">Open PR</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">Webhook fires</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">ngrok</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">Atlantis</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">terraform plan</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">PR comment</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">atlantis apply</div>
+    <div class="arrow">&rarr;</div>
+    <div class="box">AWS resources created</div>
+  </div>
+  <p class="flow-label">Every infrastructure change is version-controlled, reviewed, and automated</p>
+</div>
+
+<div class="steps">
+  <h2>Step-by-Step Flow</h2>
+  <div class="step-grid">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h3>Developer pushes .tf changes</h3>
+        <p>git push to a feature branch on GitHub</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h3>Open Pull Request</h3>
+        <p>GitHub sends webhook to Atlantis via ngrok</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h3>Atlantis runs terraform plan</h3>
+        <p>Posts plan output as a comment on the PR</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h3>Review the plan</h3>
+        <p>Team reviews what will be created/changed/destroyed</p>
+      </div>
+    </div>
+    <div class="step infra">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h3>Comment: atlantis apply</h3>
+        <p>Atlantis runs terraform apply, creates AWS resources</p>
+      </div>
+    </div>
+    <div class="step infra">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <h3>Merge PR</h3>
+        <p>Infrastructure is live, change is in git history</p>
+      </div>
+    </div>
+    <div class="step app">
+      <div class="step-num">7</div>
+      <div class="step-content">
+        <h3>Push app code to main</h3>
+        <p>GitHub Actions builds Docker image for ARM</p>
+      </div>
+    </div>
+    <div class="step app">
+      <div class="step-num">8</div>
+      <div class="step-content">
+        <h3>Image pushed to ECR</h3>
+        <p>EC2 pulls and runs the container on port 80</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="resources">
+  <h2>AWS Resources &amp; Cost</h2>
+  <table>
+    <thead>
+      <tr><th>Resource</th><th>Type</th><th>Monthly Cost</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>VPC</td><td>aws_vpc</td><td class="free">Free</td></tr>
+      <tr><td>Public Subnet</td><td>aws_subnet</td><td class="free">Free</td></tr>
+      <tr><td>Internet Gateway</td><td>aws_internet_gateway</td><td class="free">Free</td></tr>
+      <tr><td>Route Table</td><td>aws_route_table</td><td class="free">Free</td></tr>
+      <tr><td>Security Group (port 80)</td><td>aws_security_group</td><td class="free">Free</td></tr>
+      <tr><td>ECR Repository</td><td>aws_ecr_repository</td><td class="free">~$0.02</td></tr>
+      <tr><td>IAM Role + Profile</td><td>aws_iam_role</td><td class="free">Free</td></tr>
+      <tr><td>EC2 Spot (t4g.nano)</td><td>aws_spot_instance_request</td><td class="paid">~$1.50</td></tr>
+      <tr><td>S3 State Bucket</td><td>Manual</td><td class="free">~$0.01</td></tr>
+      <tr><td>DynamoDB Locks</td><td>Manual</td><td class="free">Free</td></tr>
+      <tr><td colspan="2"><strong>Total</strong></td><td class="paid"><strong>~$1.50/month</strong></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="commands">
+  <h2>Key Commands</h2>
+  <div class="cmd-group">
+    <h3>Deploy Infrastructure (via Atlantis)</h3>
+    <pre>git checkout -b feature-branch
+# edit .tf files
+git add . && git commit -m "add feature"
+git push origin feature-branch
+# Open PR on GitHub
+# Atlantis auto-runs: terraform plan
+# Comment on PR: atlantis apply -p dev</pre>
+  </div>
+  <div class="cmd-group">
+    <h3>Build &amp; Push Docker Image</h3>
+    <pre>cd app/
+docker buildx build --platform linux/arm64 -t react-app-dev --load .
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+docker tag react-app-dev:latest $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/react-app-dev:latest
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+docker push $ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/react-app-dev:latest</pre>
+  </div>
+  <div class="cmd-group">
+    <h3>Cleanup (destroy everything)</h3>
+    <pre>cd environments/dev && terraform destroy
+aws s3 rb s3://react-app-tfstate-laith --force
+aws dynamodb delete-table --table-name terraform-locks --region us-east-1</pre>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

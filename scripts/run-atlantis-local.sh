@@ -215,7 +215,8 @@ docker run -d --name "$CONTAINER_NAME" \
   --env-file "$ENV_FILE" \
   -p "${PORT}:4141" \
   -v "${HOME}/.aws:/home/atlantis/.aws:ro" \
-  "$IMAGE"
+  "$IMAGE" \
+  server --repo-config=/etc/atlantis/repos.yaml
 
 echo ""
 echo "Atlantis UI: http://localhost:$PORT"

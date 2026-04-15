@@ -1,0 +1,44 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**']
+
+env:
+  AWS_REGION: us-east-1
+  APP_NAME: react-app-dev
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        working-directory: app/
+        run: |
+          ECR_URL="${{ steps.ecr-login.outputs.registry }}/${{ env.APP_NAME }}"
+          docker build -t $ECR_URL:${{ github.sha }} -t $ECR_URL:latest .
+          docker push $ECR_URL:${{ github.sha }}
+          docker push $ECR_URL:latest
+
+      - name: Get instance IP
+        run: |
+          IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${{ env.APP_NAME }}" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "App is live at http://$IP"

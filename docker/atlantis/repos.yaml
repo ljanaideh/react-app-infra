@@ -1,0 +1,6 @@
+# Server-side repo defaults (pass: atlantis server --repo-config=/etc/atlantis/repos.yaml).
+# Allows repo-level atlantis.yaml to define workflows (Terragrunt) without plan errors.
+repos:
+  - id: /.*/
+    allow_custom_workflows: true
+    allowed_overrides: [workflow]
