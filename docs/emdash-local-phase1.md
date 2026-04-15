@@ -77,3 +77,7 @@ Stop the Node dev server with `Ctrl+C`.
 ## Optional: `pnpm approve-builds`
 
 If installs warn about ignored build scripts (`sharp`, etc.), run `pnpm approve-builds` per pnpm’s prompt if you need those native deps locally.
+
+## Next — Phase 2 (container)
+
+See [docker/emdash-demo/README.md](../docker/emdash-demo/README.md) and [scripts/emdash-docker-build.sh](../scripts/emdash-docker-build.sh).

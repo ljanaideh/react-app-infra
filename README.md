@@ -30,6 +30,7 @@ Open these in a browser (or `file:///...`). The React app shell is under `app/`;
 | Dev (EC2) | [docs/terragrunt-dev.md](docs/terragrunt-dev.md) |
 | Fargate | [docs/terragrunt-dev-fargate.md](docs/terragrunt-dev-fargate.md) |
 | EmDash local (phase 1) | [docs/emdash-local-phase1.md](docs/emdash-local-phase1.md) |
+| EmDash Docker (phase 2) | [docker/emdash-demo/README.md](docker/emdash-demo/README.md) |
 | Local Atlantis | [docs/atlantis-local.md](docs/atlantis-local.md) |
 
 Install [Terragrunt](https://terragrunt.gruntwork.io/docs/getting-started/install/), then:
@@ -79,6 +80,7 @@ react-app-infra/
 ├── environments/dev-fargate/
 ├── scripts/
 ├── docker/atlantis/          # Dockerfile + server repos.yaml
+├── docker/emdash-demo/       # EmDash app image (build context = emdash-professionals-demo clone)
 ├── atlantis.yaml
 ├── flow-diagram.html
 ├── create-destroy.html
@@ -95,6 +97,7 @@ react-app-infra/
 | [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh) | Local Atlantis + Terragrunt ([docs/atlantis-local.md](docs/atlantis-local.md)) |
 | `scripts/docker-local-test.sh` | Local amd64 build + http://localhost:8080 |
 | `scripts/docker-push-ecr.sh` | Build + push to ECR (`DEPLOY=ec2` \| `fargate`, or `ECR_REPOSITORY`) |
+| [scripts/emdash-docker-build.sh](scripts/emdash-docker-build.sh) | Build EmDash image ([docker/emdash-demo](docker/emdash-demo)) |
 | `scripts/replace-ec2-instance.sh` | Replace EC2 (dev) |
 
 ---

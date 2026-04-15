@@ -1,0 +1,14 @@
+# Copy to the root of emdash-professionals-demo as `.dockerignore` before `docker build`
+# (Docker only reads .dockerignore from the build context directory.)
+
+node_modules
+.git
+.turbo
+**/.turbo
+**/dist
+**/.astro
+**/.terragrunt-cache
+**/.terraform
+*.log
+otel_grafana_stack_fixed/logs
+.DS_Store
