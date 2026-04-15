@@ -29,8 +29,8 @@ Outputs include **app_url** (ALB DNS).
 ECR repository name matches `app_name`: **react-app-dev-fargate**. Push **linux/arm64** (Fargate task is ARM):
 
 ```bash
-export ECR_REPOSITORY=react-app-dev-fargate
 ./scripts/docker-push-ecr.sh
+# or: DEPLOY=fargate ./scripts/docker-push-ecr.sh
 ```
 
 Then force new deployment if tag unchanged:

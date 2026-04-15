@@ -45,7 +45,7 @@ terragrunt apply
 Push **amd64** images to ECR repo **`react-app-dev`** (matches `app_name`):
 
 ```bash
-ECR_REPOSITORY=react-app-dev ./scripts/docker-push-ecr.sh
+DEPLOY=ec2 ./scripts/docker-push-ecr.sh
 ```
 
 **dev-fargate**
@@ -57,10 +57,11 @@ terragrunt plan
 terragrunt apply
 ```
 
-Push **linux/arm64** to **`react-app-dev-fargate`**:
+Push **linux/arm64** to **`react-app-dev-fargate`** (default):
 
 ```bash
-ECR_REPOSITORY=react-app-dev-fargate ./scripts/docker-push-ecr.sh
+./scripts/docker-push-ecr.sh
+# same as: DEPLOY=fargate ./scripts/docker-push-ecr.sh
 ```
 
 **Atlantis:** [atlantis.yaml](atlantis.yaml) lists **projects** only; **Terragrunt** runs via **server-side** [docker/atlantis/repos.yaml](docker/atlantis/repos.yaml) (`workflows.default`). Hosted Atlantis **must** use that file (or equivalent) with `--repo-config` and have **`terragrunt` installed** — otherwise checks run **`terraform plan`** in env dirs that only contain `terragrunt.hcl` and plans fail (see **Hosted Atlantis** troubleshooting in [docs/atlantis-local.md](docs/atlantis-local.md)). Local Docker: [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh).
@@ -92,7 +93,7 @@ react-app-infra/
 | [scripts/verify-infra.sh](scripts/verify-infra.sh) | `terraform fmt -check`, `validate` modules, optional `terragrunt validate` |
 | [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh) | Local Atlantis + Terragrunt ([docs/atlantis-local.md](docs/atlantis-local.md)) |
 | `scripts/docker-local-test.sh` | Local amd64 build + http://localhost:8080 |
-| `scripts/docker-push-ecr.sh` | Build + push to ECR (`ECR_REPOSITORY`) |
+| `scripts/docker-push-ecr.sh` | Build + push to ECR (`DEPLOY=ec2` \| `fargate`, or `ECR_REPOSITORY`) |
 | `scripts/replace-ec2-instance.sh` | Replace EC2 (dev) |
 
 ---

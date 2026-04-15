@@ -27,8 +27,7 @@ Outputs include **app_url** (HTTP on the instance public DNS). The EC2 user data
 Push an image first (repo name matches `app_name`, e.g. **react-app-dev**):
 
 ```bash
-export ECR_REPOSITORY=react-app-dev
-./scripts/docker-push-ecr.sh
+DEPLOY=ec2 ./scripts/docker-push-ecr.sh
 ```
 
 The instance retries `docker pull` until the image exists.

@@ -125,7 +125,8 @@ terraform plan
 terraform apply</div>
   <p class="lead">With Atlantis: open a PR &rarr; plan &rarr; comment <code>atlantis apply -p dev</code> when ready.</p>
 
-  <h3>6) Container image to ECR (ARM for Graviton EC2)</h3>
+  <h3>6) Container image to ECR</h3>
+  <p class="lead">Fargate (default, ARM64): <code>./scripts/docker-push-ecr.sh</code> — EC2 dev (amd64): <code>DEPLOY=ec2 ./scripts/docker-push-ecr.sh</code></p>
   <div class="cmd">./scripts/docker-push-ecr.sh</div>
   <p class="note">If EC2 booted before the image existed, bump <code>user_data</code> or run <code>./scripts/replace-ec2-instance.sh</code>, then apply again.</p>
 
