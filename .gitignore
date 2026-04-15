@@ -1,0 +1,13 @@
+# Terragrunt / Terraform
+.terragrunt-cache/
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Local Atlantis (secrets)
+scripts/.env.atlantis.local
+.env.atlantis.local
+scripts/.atlantis-ngrok.pid
+scripts/.atlantis-ngrok.log
+terragrunt_rendered.json
+*_rendered.json

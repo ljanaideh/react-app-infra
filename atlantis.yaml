@@ -1,0 +1,45 @@
+version: 3
+projects:
+  - name: dev
+    dir: environments/dev
+    workflow: terragrunt
+    autoplan:
+      when_modified:
+        - "**/*.hcl"
+        - "../../terragrunt.hcl"
+        - "../../modules/**/*.tf"
+      enabled: true
+  - name: dev-fargate
+    dir: environments/dev-fargate
+    workflow: terragrunt
+    autoplan:
+      when_modified:
+        - "**/*.hcl"
+        - "../../terragrunt.hcl"
+        - "../../modules/**/*.tf"
+      enabled: true
+
+workflows:
+  terragrunt:
+    plan:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run:
+            command: terragrunt plan -input=false -out=$PLANFILE
+            output: strip_refreshing
+    apply:
+      steps:
+        - env:
+            name: TERRAGRUNT_TFPATH
+            command: 'echo "terraform${ATLANTIS_TERRAFORM_VERSION}"'
+        - env:
+            name: TF_IN_AUTOMATION
+            value: "true"
+        - run: terragrunt apply -input=false $PLANFILE
+
+# Requires an Atlantis image (or sidecar) with Terragrunt installed. Same workflow for dev + dev-fargate.
