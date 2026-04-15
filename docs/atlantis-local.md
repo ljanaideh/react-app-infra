@@ -1,6 +1,6 @@
 # Local Atlantis (Docker + ngrok)
 
-This repo’s [atlantis.yaml](../atlantis.yaml) runs **Terragrunt**. The official Atlantis image does not include Terragrunt, so use the included **Dockerfile** or install Terragrunt yourself.
+This repo’s [atlantis.yaml](../atlantis.yaml) lists **projects** only. **Terragrunt** plan/apply steps live in **server-side** config ([docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml)) so strict hosted Atlantis does not require **`allow_custom_workflows`** on the repo file. The official Atlantis image does not include Terragrunt, so use the included **Dockerfile** or install Terragrunt on the server.
 
 ## One-time setup
 
@@ -82,23 +82,16 @@ ngrok is forwarding to your machine, but nothing is accepting connections on tha
 
 ## Hosted Atlantis (GitHub PR checks)
 
-If you see **`repo config not allowed to set 'workflow'`** or **`allow_repo_config_workflow`**, the **server** must allow repo-level workflows. Options:
+**Errors like** **`repo config not allowed to define custom workflows`** happen when **`workflows:`** appears in the **repo** `atlantis.yaml` but the server does not set **`allow_custom_workflows: true`** for that repo.
 
-1. **Repo `atlantis.yaml`** in this project uses **`workflows.default`** only (no **`projects[].workflow`**), which works on most servers.
-2. If the server still blocks custom **`workflows:`** in the repo file, add **server-side** config (same idea as [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml)):
-   - **`allow_custom_workflows: true`**
-   - **`allowed_overrides: [workflow]`** (only if you reintroduce per-project `workflow:`)
+**This repository** keeps **`workflows:` out of [atlantis.yaml](../atlantis.yaml)** and defines the **Terragrunt `default` workflow on the Atlantis server** instead. Your deployment must load the same content as [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml) (copy: [atlantis-server-config.example.yaml](atlantis-server-config.example.yaml)):
 
-Example **`repos.yaml`** passed to **`atlantis server --repo-config=...`**:
-
-```yaml
-repos:
-  - id: /.*/
-    allow_custom_workflows: true
-    allowed_overrides: [workflow]
+```bash
+atlantis server --repo-config=/path/to/repos.yaml
+# or: ATLANTIS_REPO_CONFIG=/path/to/repos.yaml
 ```
 
-Or **`ATLANTIS_REPO_CONFIG_JSON`** with the same under **`repos`**.
+That file includes **`repos`**, **`allow_custom_workflows`**, and **`workflows.default`** with **`terragrunt plan` / `terragrunt apply`**. If your org shares one Atlantis across many repos, scope **`repos[].id`** (e.g. `github.com/ljanaideh/react-app-infra`) or merge the **`workflows.default`** block into your existing server config carefully.
 
 ## Security
 

@@ -1,6 +1,9 @@
-# Full Atlantis SERVER config: pass as atlantis server --repo-config=/path/to/this/file
-# (image copies to /etc/atlantis/repos.yaml). Defines default Terragrunt workflow so the
-# repo atlantis.yaml does not need a workflows: block.
+# Example Atlantis SERVER-SIDE config (not committed as atlantis.yaml in the repo).
+# Install: point your Atlantis deployment at this file:
+#   atlantis server --repo-config=/path/to/atlantis-server-config.example.yaml
+# or set ATLANTIS_REPO_CONFIG to that path.
+#
+# Same content as docker/atlantis/repos.yaml in this repository.
 
 repos:
   - id: /.*/

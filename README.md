@@ -63,7 +63,7 @@ Push **linux/arm64** to **`react-app-dev-fargate`**:
 ECR_REPOSITORY=react-app-dev-fargate ./scripts/docker-push-ecr.sh
 ```
 
-**Atlantis:** [atlantis.yaml](atlantis.yaml) uses a **`default`** workflow with **Terragrunt** (no per-project `workflow:` key, for strict servers). Hosted Atlantis must allow **repo workflows** — see [docker/atlantis/repos.yaml](docker/atlantis/repos.yaml) and [docs/atlantis-local.md](docs/atlantis-local.md). Local Docker: [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh), secrets in **`scripts/.env.atlantis.local`**.
+**Atlantis:** [atlantis.yaml](atlantis.yaml) lists **projects** only; **Terragrunt** runs via **server-side** [docker/atlantis/repos.yaml](docker/atlantis/repos.yaml) (`workflows.default`). Hosted Atlantis **must** use that file (or equivalent) with `--repo-config` — see [docs/atlantis-local.md](docs/atlantis-local.md). Local Docker: [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh).
 
 ---
 
