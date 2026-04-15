@@ -2,6 +2,23 @@
 
 This repo’s [atlantis.yaml](../atlantis.yaml) lists **projects** only. **Terragrunt** plan/apply steps live in **server-side** config ([docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml)) so strict hosted Atlantis does not require **`allow_custom_workflows`** on the repo file. The official Atlantis image does not include Terragrunt, so use the included **Dockerfile** or install Terragrunt on the server.
 
+## Projects and PR commands
+
+[atlantis.yaml](../atlantis.yaml) defines one Atlantis **project** per environment (the `-p` name is the `name:` field):
+
+| Project (`-p`) | Directory |
+|----------------|-----------|
+| `dev` | `environments/dev` |
+| `dev-fargate` | `environments/dev-fargate` |
+| `dev-emdash` | `environments/dev-emdash` |
+
+On a pull request, comment (adjust the project as needed):
+
+- **`atlantis plan -p dev-emdash`** — Terragrunt plan for the EmDash stack only  
+- **`atlantis apply -p dev-emdash`** — apply after review (same project)
+
+**Autoplan** runs when matching paths change (each project’s `when_modified` globs include `../../modules/**/*.tf` and root `terragrunt.hcl`), so shared module edits can trigger plans for multiple projects.
+
 ## One-time setup
 
 1. Copy the env template and fill in secrets (file is gitignored):
@@ -106,7 +123,7 @@ That file includes **`repos`**, **`allow_custom_workflows`**, and **`workflows.d
 
 ### `Required plugins are not installed` / AWS provider not in `.terraform/providers`
 
-If Atlantis logs show **`/usr/local/bin/terraform plan`** (not **`terragrunt plan`**), the server is still using the **stock Terraform workflow**. Under `environments/dev` and `environments/dev-fargate` there are only **`terragrunt.hcl`** files plus **`.terraform.lock.hcl`** — no `*.tf` in those directories. Plain **`terraform init`** treats that as an **empty** Terraform root, so it **does not** download the AWS provider; **`terraform plan`** then fails with a lock-file / provider cache error.
+If Atlantis logs show **`/usr/local/bin/terraform plan`** (not **`terragrunt plan`**), the server is still using the **stock Terraform workflow**. Under `environments/dev`, `environments/dev-fargate`, and `environments/dev-emdash` there are only **`terragrunt.hcl`** files plus **`.terraform.lock.hcl`** — no `*.tf` in those directories. Plain **`terraform init`** treats that as an **empty** Terraform root, so it **does not** download the AWS provider; **`terraform plan`** then fails with a lock-file / provider cache error.
 
 **Fix:** Load [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml) on the server (`--repo-config` / `ATLANTIS_REPO_CONFIG`) and ensure the Atlantis image (or `$PATH`) includes **`terragrunt`** (see [Dockerfile](../docker/atlantis/Dockerfile)). After redeploy, logs should show **`terragrunt plan`**.
 

@@ -39,6 +39,10 @@ Then force new deployment if tag unchanged:
 aws ecs update-service --cluster react-app-dev-fargate-cluster --service react-app-dev-fargate-svc --force-new-deployment --region us-east-1
 ```
 
+## Atlantis (GitOps)
+
+Project name **`dev-fargate`** in [atlantis.yaml](../atlantis.yaml). Example PR comments: **`atlantis plan -p dev-fargate`**, **`atlantis apply -p dev-fargate`**. Server config: [docker/atlantis/repos.yaml](../docker/atlantis/repos.yaml); local runbook: [atlantis-local.md](atlantis-local.md).
+
 ## Destroy
 
 ```bash

@@ -21,6 +21,8 @@ if command -v terragrunt >/dev/null 2>&1; then
   (cd "$ROOT/environments/dev" && terragrunt validate --terragrunt-non-interactive)
   echo "== terragrunt validate: environments/dev-fargate =="
   (cd "$ROOT/environments/dev-fargate" && terragrunt validate --terragrunt-non-interactive)
+  echo "== terragrunt validate: environments/dev-emdash =="
+  (cd "$ROOT/environments/dev-emdash" && terragrunt validate --terragrunt-non-interactive)
 else
   echo "== terragrunt not in PATH; skip env validate (install Terragrunt or use CI) =="
 fi

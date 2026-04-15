@@ -1,6 +1,6 @@
 # react-app-infra
 
-Terraform on AWS for a containerized React app: **VPC**, **ECR**, **EC2 Spot** (`environments/dev`) and **ECS Fargate + ALB** (`environments/dev-fargate`). Both stacks use **Terragrunt** for remote state and **Atlantis** for GitOps; **GitHub Actions** can build and push images.
+Terraform on AWS: **VPC**, **ECR**, **EC2 Spot** (`environments/dev`), **ECS Fargate + ALB** for the React app (`environments/dev-fargate`), and a separate **EmDash** Fargate stack (`environments/dev-emdash`). All use **Terragrunt** for remote state and **Atlantis** for GitOps; **GitHub Actions** can build and push images.
 
 ---
 
@@ -21,14 +21,16 @@ Open these in a browser (or `file:///...`). The React app shell is under `app/`;
 | Path | Tool | Stack |
 |------|------|--------|
 | `environments/dev/` | **Terragrunt** | EC2 Spot, Docker from ECR, `vpc_ha`, ECR |
-| `environments/dev-fargate/` | **Terragrunt** | 2 AZ, ECR, Fargate behind ALB |
+| `environments/dev-fargate/` | **Terragrunt** | 2 AZ, ECR, Fargate behind ALB (React, port 80) |
+| `environments/dev-emdash/` | **Terragrunt** | Same pattern, **EmDash** SSR (port **4321**), own VPC + ECR |
 
-**Terragrunt** root: [terragrunt.hcl](terragrunt.hcl). State keys: `environments/dev/terraform.tfstate`, `environments/dev-fargate/terraform.tfstate` (see `TF_STATE_BUCKET`).
+**Terragrunt** root: [terragrunt.hcl](terragrunt.hcl). State keys: `environments/dev/terraform.tfstate`, `environments/dev-fargate/terraform.tfstate`, `environments/dev-emdash/terraform.tfstate` (see `TF_STATE_BUCKET`).
 
 | Docs | |
 |------|---|
 | Dev (EC2) | [docs/terragrunt-dev.md](docs/terragrunt-dev.md) |
-| Fargate | [docs/terragrunt-dev-fargate.md](docs/terragrunt-dev-fargate.md) |
+| Fargate (React) | [docs/terragrunt-dev-fargate.md](docs/terragrunt-dev-fargate.md) |
+| Fargate (EmDash) | [docs/terragrunt-dev-emdash.md](docs/terragrunt-dev-emdash.md) |
 | EmDash local (phase 1) | [docs/emdash-local-phase1.md](docs/emdash-local-phase1.md) |
 | EmDash Docker (phase 2) | [docker/emdash-demo/README.md](docker/emdash-demo/README.md) |
 | Local Atlantis | [docs/atlantis-local.md](docs/atlantis-local.md) |
@@ -66,7 +68,22 @@ Push **linux/arm64** to **`react-app-dev-fargate`** (default):
 # same as: DEPLOY=fargate ./scripts/docker-push-ecr.sh
 ```
 
-**Atlantis:** [atlantis.yaml](atlantis.yaml) lists **projects** only; **Terragrunt** runs via **server-side** [docker/atlantis/repos.yaml](docker/atlantis/repos.yaml) (`workflows.default`). Hosted Atlantis **must** use that file (or equivalent) with `--repo-config` and have **`terragrunt` installed** — otherwise checks run **`terraform plan`** in env dirs that only contain `terragrunt.hcl` and plans fail (see **Hosted Atlantis** troubleshooting in [docs/atlantis-local.md](docs/atlantis-local.md)). Local Docker: [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh).
+**dev-emdash** (EmDash image — build context is the **emdash-professionals-demo** clone)
+
+```bash
+cd environments/dev-emdash
+terragrunt init
+terragrunt plan
+terragrunt apply
+```
+
+Push **linux/arm64** to ECR repo **`dev-emdash`** (matches `app_name`):
+
+```bash
+EMDASH_SRC=~/Downloads/emdash-professionals-demo ./scripts/emdash-docker-push-ecr.sh
+```
+
+**Atlantis:** [atlantis.yaml](atlantis.yaml) defines projects **`dev`**, **`dev-fargate`**, and **`dev-emdash`**; **Terragrunt** runs via **server-side** [docker/atlantis/repos.yaml](docker/atlantis/repos.yaml) (`workflows.default`). On PRs: e.g. **`atlantis plan -p dev-emdash`** / **`atlantis apply -p dev-emdash`**. Hosted Atlantis **must** load that repo config (`--repo-config`) and have **`terragrunt` installed** — otherwise checks run **`terraform plan`** in env dirs that only contain `terragrunt.hcl` and plans fail (see [docs/atlantis-local.md](docs/atlantis-local.md)). Local Docker: [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh).
 
 ---
 
@@ -78,6 +95,7 @@ react-app-infra/
 ├── modules/                  # vpc_ha, ecr, dev_env, fargate_*, …
 ├── environments/dev/         # Terragrunt
 ├── environments/dev-fargate/
+├── environments/dev-emdash/
 ├── scripts/
 ├── docker/atlantis/          # Dockerfile + server repos.yaml
 ├── docker/emdash-demo/       # EmDash app image (build context = emdash-professionals-demo clone)
@@ -97,7 +115,8 @@ react-app-infra/
 | [scripts/run-atlantis-local.sh](scripts/run-atlantis-local.sh) | Local Atlantis + Terragrunt ([docs/atlantis-local.md](docs/atlantis-local.md)) |
 | `scripts/docker-local-test.sh` | Local amd64 build + http://localhost:8080 |
 | `scripts/docker-push-ecr.sh` | Build + push to ECR (`DEPLOY=ec2` \| `fargate`, or `ECR_REPOSITORY`) |
-| [scripts/emdash-docker-build.sh](scripts/emdash-docker-build.sh) | Build EmDash image ([docker/emdash-demo](docker/emdash-demo)) |
+| [scripts/emdash-docker-build.sh](scripts/emdash-docker-build.sh) | Build EmDash image locally ([docker/emdash-demo](docker/emdash-demo)) |
+| [scripts/emdash-docker-push-ecr.sh](scripts/emdash-docker-push-ecr.sh) | Build EmDash **linux/arm64** and push to ECR (`dev-emdash`) |
 | `scripts/replace-ec2-instance.sh` | Replace EC2 (dev) |
 
 ---
@@ -108,7 +127,7 @@ react-app-infra/
 - Terraform ≥ 1.6
 - Docker (build/push)
 - S3 bucket for remote state (see **create-destroy.html**)
-- **Terragrunt** for `dev` and `dev-fargate`
+- **Terragrunt** for `dev`, `dev-fargate`, and `dev-emdash`
 
 ---
 

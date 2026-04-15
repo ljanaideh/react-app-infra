@@ -32,6 +32,10 @@ DEPLOY=ec2 ./scripts/docker-push-ecr.sh
 
 The instance retries `docker pull` until the image exists.
 
+## Atlantis (GitOps)
+
+Project name **`dev`** in [atlantis.yaml](../atlantis.yaml). Example PR comments: **`atlantis plan -p dev`**, **`atlantis apply -p dev`**. See [atlantis-local.md](atlantis-local.md).
+
 ## Destroy
 
 ```bash

@@ -17,4 +17,5 @@ module "fargate_app" {
   ecr_repository_url = module.ecr.repository_url
   image_tag          = var.image_tag
   desired_count      = var.desired_count
+  container_port     = var.container_port
 }

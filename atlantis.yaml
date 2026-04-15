@@ -22,3 +22,11 @@ projects:
         - "../../terragrunt.hcl"
         - "../../modules/**/*.tf"
       enabled: true
+  - name: dev-emdash
+    dir: environments/dev-emdash
+    autoplan:
+      when_modified:
+        - "**/*.hcl"
+        - "../../terragrunt.hcl"
+        - "../../modules/**/*.tf"
+      enabled: true
