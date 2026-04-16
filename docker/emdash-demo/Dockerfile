@@ -5,7 +5,8 @@
 #
 # Fargate (ARM64): docker buildx build --platform linux/arm64 ...
 
-FROM node:20-bookworm-slim
+# Node 22+: monorepo uses `node --run` in package scripts (not supported on Node 20).
+FROM node:22-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -27,6 +28,10 @@ RUN pnpm run build
 RUN pnpm --filter emdash-demo build
 
 WORKDIR /app/demos/simple
+
+# pnpm installs kysely under packages/core; Astro SSR chunks under demos/simple resolve
+# `require("kysely")` from the demo tree, so Node must also search core's node_modules.
+ENV NODE_PATH=/app/packages/core/node_modules
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
