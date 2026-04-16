@@ -1,4 +1,4 @@
-# Remote state for all Terragrunt children (e.g. environments/dev, environments/dev-fargate).
+# Remote state for all Terragrunt children (e.g. environments/dev, dev-fargate, dev-emdash).
 # Bucket must exist; key is unique per env folder.
 
 remote_state {
